@@ -13,21 +13,11 @@ set -ouex pipefail
 dnf5 install -y tmux 
 
 # VS Code — add Microsoft's RPM repo
-rpm --import https://packages.microsoft.com/keys/microsoft.asc
-echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo
+cp /ctx/yum.repos.d/vscode.repo /etc/yum.repos.d/vscode.repo
 dnf5 install -y code
 
 # NetBird — add NetBird RPM repo
-tee /etc/yum.repos.d/netbird.repo <<EOF
-[netbird]
-name=netbird
-baseurl=https://pkgs.netbird.io/yum/
-enabled=1
-gpgcheck=1
-gpgkey=https://pkgs.netbird.io/yum/repodata/repomd.xml.key
-repo_gpgcheck=1
-EOF
-dnf5 config-manager addrepo --from-repofile=/etc/yum.repos.d/netbird.repo
+cp /ctx/yum.repos.d/netbird.repo /etc/yum.repos.d/netbird.repo
 dnf5 install -y netbird netbird-ui
 
 # Use a COPR Example:
