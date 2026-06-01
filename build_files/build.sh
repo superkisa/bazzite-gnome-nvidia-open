@@ -18,7 +18,14 @@ dnf5 install -y code
 
 # NetBird — add NetBird RPM repo
 cp /ctx/yum.repos.d/netbird.repo /etc/yum.repos.d/netbird.repo
-dnf5 install -y netbird netbird-ui
+# NetBird's %post scriptlet tries to start the service during install,
+# which fails in a container build (no systemd). Skip scriptlets here.
+dnf5 install -y --setopt=tsflags=noscripts netbird netbird-ui
+
+# The skipped %post runs `netbird service install` to write the systemd unit
+# file. Call it manually; daemon-reload will fail (no systemd bus in container)
+# but the unit file is written before that, so we swallow the error.
+netbird service install || true
 
 # Use a COPR Example:
 #
@@ -30,3 +37,4 @@ dnf5 install -y netbird netbird-ui
 #### Example for enabling a System Unit File
 
 systemctl enable podman.socket
+systemctl enable netbird.service
