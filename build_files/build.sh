@@ -17,6 +17,7 @@ dnf5 install -y code
 
 cp /ctx/yum.repos.d/terra.repo /etc/yum.repos.d/terra.repo
 dnf5 install -y --nogpgcheck terra-release terra-gpg-keys
+dnf5 install -y zed
 
 # NetBird — add NetBird RPM repo
 cp /ctx/yum.repos.d/netbird.repo /etc/yum.repos.d/netbird.repo
