@@ -12,9 +12,11 @@ set -ouex pipefail
 # this installs a package from fedora repos
 dnf5 install -y tmux 
 
-# VS Code — add Microsoft's RPM repo
 cp /ctx/yum.repos.d/vscode.repo /etc/yum.repos.d/vscode.repo
 dnf5 install -y code
+
+cp /ctx/yum.repos.d/terra.repo /etc/yum.repos.d/terra.repo
+dnf5 install -y --nogpgcheck terra-release terra-gpg-keys
 
 # NetBird — add NetBird RPM repo
 cp /ctx/yum.repos.d/netbird.repo /etc/yum.repos.d/netbird.repo
