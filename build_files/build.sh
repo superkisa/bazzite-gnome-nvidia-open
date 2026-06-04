@@ -10,17 +10,17 @@ set -ouex pipefail
 # https://mirrors.rpmfusion.org/mirrorlist?path=free/fedora/updates/43/x86_64/repoview/index.html&protocol=https&redirect=1
 
 # this installs a package from fedora repos
-dnf5 install -y tmux 
+dnf5 install -y tmux
 
-cp /ctx/yum.repos.d/vscode.repo /etc/yum.repos.d/vscode.repo
+cp /ctx/fs/etc/yum.repos.d/vscode.repo /etc/yum.repos.d/vscode.repo
 dnf5 install -y code
 
-cp /ctx/yum.repos.d/terra.repo /etc/yum.repos.d/terra.repo
+cp /ctx/fs/etc/yum.repos.d/terra.repo /etc/yum.repos.d/terra.repo
 dnf5 install -y --nogpgcheck terra-release terra-gpg-keys
 dnf5 install -y zed
 
 # NetBird — add NetBird RPM repo
-cp /ctx/yum.repos.d/netbird.repo /etc/yum.repos.d/netbird.repo
+cp /ctx/fs/etc/yum.repos.d/netbird.repo /etc/yum.repos.d/netbird.repo
 # NetBird's %post scriptlet tries to start the service during install,
 # which fails in a container build (no systemd). Skip scriptlets here.
 dnf5 install -y --setopt=tsflags=noscripts netbird netbird-ui
@@ -37,7 +37,19 @@ netbird service install || true
 # Disable COPRs so they don't end up enabled on the final image:
 # dnf5 -y copr disable ublue-os/staging
 
-#### Example for enabling a System Unit File
-
 systemctl enable podman.socket
 systemctl enable netbird.service
+
+# Configure signatures
+
+jq '.transports.docker["ghcr.io/superkisa"] = [
+    {
+        "type": "sigstoreSigned",
+        "keyPath": "/etc/pki/containers/superkisa.pub",
+        "signedIdentity": {"type": "matchRepository"}
+    }
+]' /etc/containers/policy.json >/tmp/policy.json
+mv /tmp/policy.json /etc/containers/policy.json
+
+cp /ctx/fs/etc/containers/registries.d/ghcr.io-superkisa.yaml \
+	/etc/containers/registries.d/ghcr.io-superkisa.yaml
