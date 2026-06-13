@@ -59,6 +59,8 @@ configure_signatures() {
 
 	cp /ctx/fs/etc/containers/registries.d/ghcr.io-superkisa.yaml \
 		/etc/containers/registries.d/ghcr.io-superkisa.yaml
+
+	install -m 644 /ctx/fs/etc/pki/containers/superkisa.pub /etc/pki/containers/superkisa.pub
 }
 
 ###  Main
