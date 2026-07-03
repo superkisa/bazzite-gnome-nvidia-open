@@ -30,6 +30,7 @@ install_netbird() {
 
 install_fedora_packages() {
 	dnf5 install -y tmux
+	dnf5 install -y podman podman-docker docker-compose
 
 	install_yum_repo vscode
 	dnf5 install -y code
