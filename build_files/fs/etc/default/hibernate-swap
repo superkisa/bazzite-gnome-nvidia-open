@@ -1,0 +1,4 @@
+# Keep this fixed-size for S4 hibernation. Btrfs swapfiles have a stable
+# resume_offset only while their physical extent mapping stays unchanged.
+HIBERNATE_SWAPFILE=/var/lib/hibernate-swap/swapfile
+HIBERNATE_SWAP_SIZE=32G
