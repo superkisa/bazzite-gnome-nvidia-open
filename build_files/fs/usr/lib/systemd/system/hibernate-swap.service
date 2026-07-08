@@ -1,0 +1,15 @@
+[Unit]
+Description=Create and configure disk swap for hibernation
+Documentation=man:systemd-hibernate.service(8)
+DefaultDependencies=no
+After=local-fs.target
+Before=swap.target sleep.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target
+ConditionPathIsReadWrite=/var
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/configure-hibernate-swap
+
+[Install]
+WantedBy=swap.target

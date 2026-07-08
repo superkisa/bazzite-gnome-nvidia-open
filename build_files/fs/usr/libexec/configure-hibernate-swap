@@ -1,0 +1,56 @@
+#!/usr/bin/bash
+#cspell:words kargs ouex noheadings blkid sysfs swsusp
+
+set -ouex pipefail
+
+config_file=/etc/default/hibernate-swap
+if [[ -f "${config_file}" ]]; then
+	# shellcheck source=/dev/null
+	source "${config_file}"
+fi
+
+: "${HIBERNATE_SWAPFILE:=/var/lib/hibernate-swap/swapfile}"
+: "${HIBERNATE_SWAP_SIZE:=32G}"
+
+swapfile="${HIBERNATE_SWAPFILE}"
+swapdir="$(dirname "${swapfile}")"
+state_dir=/var/lib/hibernate-swap
+kargs_state="${state_dir}/kargs"
+
+mkdir -p "${swapdir}" "${state_dir}"
+
+if [[ ! -e "${swapfile}" ]]; then
+	btrfs filesystem mkswapfile --size "${HIBERNATE_SWAP_SIZE}" "${swapfile}"
+fi
+
+chmod 0600 "${swapfile}"
+
+# Compare canonical paths: swapon --show prints the resolved NAME, which may
+# not match "${swapfile}" verbatim if the path contains a symlink. A verbatim
+# mismatch would re-run swapon on an already-active file, which fails and would
+# abort this unit under `set -e` before the kargs step below.
+canonical_swapfile="$(readlink -f "${swapfile}")"
+if ! swapon --show=NAME --noheadings \
+	| while read -r name; do readlink -f "${name}"; done \
+	| grep -Fxq "${canonical_swapfile}"; then
+	swapon "${swapfile}"
+fi
+
+resume_source="$(findmnt -v -no SOURCE -T "${swapfile}")"
+resume_uuid="$(blkid -s UUID -o value "${resume_source}")"
+resume_offset="$(btrfs inspect-internal map-swapfile -r "${swapfile}")"
+resume_options="resume=UUID=${resume_uuid} resume_offset=${resume_offset}"
+
+# The kernel resumes from the resume=/resume_offset kargs via the initramfs,
+# and systemd populates /sys/power/resume{,_offset} itself at hibernate time.
+# We deliberately do NOT poke those sysfs files here: this unit runs after
+# local-fs.target with filesystems mounted read-write, and writing
+# /sys/power/resume in that state is documented to risk corruption on a
+# stale-image boot (swsusp.rst).
+
+if [[ ! -f "${kargs_state}" ]] || [[ "$(cat "${kargs_state}")" != "${resume_options}" ]]; then
+	bootc loader-entries set-options-for-source \
+		--source hibernate-swap \
+		--options "${resume_options}"
+	printf '%s\n' "${resume_options}" >"${kargs_state}"
+fi

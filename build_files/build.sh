@@ -45,6 +45,16 @@ install_fedora_packages() {
 enable_services() {
 	systemctl enable podman.socket
 	systemctl enable netbird.service
+	systemctl enable hibernate-swap.service
+}
+
+configure_hibernation() {
+	install -D -m 644 /ctx/fs/etc/default/hibernate-swap \
+		/etc/default/hibernate-swap
+	install -D -m 644 /ctx/fs/usr/lib/systemd/system/hibernate-swap.service \
+		/usr/lib/systemd/system/hibernate-swap.service
+	install -D -m 755 /ctx/fs/usr/libexec/configure-hibernate-swap \
+		/usr/libexec/configure-hibernate-swap
 }
 
 # Configure container signature verification
@@ -67,5 +77,6 @@ configure_signatures() {
 ###  Main
 
 install_fedora_packages
+configure_hibernation
 enable_services
 configure_signatures

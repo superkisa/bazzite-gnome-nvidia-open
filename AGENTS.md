@@ -33,7 +33,7 @@ just clean                    # Remove build artifacts
 - **COPR pattern**: When adding COPR repos, enable → install → disable in the same `RUN` to avoid leaking COPRs into the final image. See examples in `build.sh`.
 - **Lint gate**: `bootc container lint` runs at the end of the Containerfile — the build fails if the image isn't bootc-compatible.
 - **Signing**: All images are signed with Cosign. The private key is stored as the `SIGNING_SECRET` GitHub secret; `cosign.pub` is the public key in this repo.
-- **Root filesystem**: Disk images use Btrfs (`--rootfs=btrfs`), 20 GiB minimum root partition.
+- **Root filesystem**: Disk images use Btrfs (`--rootfs=btrfs`), 64 GiB minimum root partition (must fit the OS plus the 32G hibernation swapfile under `/var`).
 
 ## Key Files to Edit
 

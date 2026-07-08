@@ -1,3 +1,6 @@
+# Root must hold the OS plus the hibernation swapfile (HIBERNATE_SWAP_SIZE,
+# default 32G, lives under /var on this same filesystem). Keep this >= OS
+# footprint + swap size + headroom, or first-boot swapfile creation fails.
 [[customizations.filesystem]]
 mountpoint = "/"
-minsize = "20 GiB"
+minsize = "64 GiB"
