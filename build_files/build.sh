@@ -29,15 +29,18 @@ install_netbird() {
 }
 
 install_fedora_packages() {
-	dnf5 install -y tmux
+	dnf5 install -y chezmoi fish git keepassxc kitty syncthing xpra
 	dnf5 install -y podman podman-docker docker-compose
+
+	dnf5 copr enable -y jdxcode/mise
+	dnf5 install -y mise
 
 	install_yum_repo vscode
 	dnf5 install -y code
 
 	install_yum_repo terra
 	dnf5 install -y --nogpgcheck terra-release terra-gpg-keys
-	dnf5 install -y zed
+	dnf5 install -y zed ghostty
 
 	install_netbird
 }
