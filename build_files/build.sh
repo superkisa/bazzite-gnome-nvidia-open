@@ -31,6 +31,8 @@ install_netbird() {
 install_fedora_packages() {
 	dnf5 install -y chezmoi fish git keepassxc kitty socat syncthing xpra
 	dnf5 install -y podman podman-docker docker-compose
+	# Claude Desktop's Cowork VM (edk2-ovmf is already in the base image)
+	dnf5 install -y qemu-system-x86-core virtiofsd
 
 	dnf5 copr enable -y jdxcode/mise
 	dnf5 install -y mise
@@ -43,6 +45,15 @@ install_fedora_packages() {
 	dnf5 install -y zed ghostty
 
 	install_netbird
+}
+
+# Unpacks Anthropic's signed .deb (there is no RPM yet). Must run after every
+# dnf5 install, since it rebuilds the icon and MIME caches.
+install_claude_desktop() {
+	bash /ctx/install-claude-desktop.sh
+	# Cowork needs /dev/vhost-vsock
+	install -D -m 644 /ctx/fs/usr/lib/modules-load.d/claude-desktop-cowork.conf \
+		/usr/lib/modules-load.d/claude-desktop-cowork.conf
 }
 
 enable_services() {
@@ -80,6 +91,7 @@ configure_signatures() {
 ###  Main
 
 install_fedora_packages
+install_claude_desktop
 configure_hibernation
 enable_services
 configure_signatures

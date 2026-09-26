@@ -22,6 +22,7 @@ just clean                    # Remove build artifacts
 
 - **`Containerfile`** — Multi-stage build: copies `build_files/` into a scratch stage, then runs `build.sh` from the base Bazzite image. Ends with `bootc container lint`.
 - **`build_files/build.sh`** — All package installations and system customizations go here. Runs during image build inside the container.
+- **`build_files/install-claude-desktop.sh`** — Installs Claude Desktop by unpacking Anthropic's signed `.deb` (no RPM exists yet), verified against the pinned `claude-desktop-archive-keyring.asc`. Must run after every `dnf5 install` because it rebuilds the icon/MIME caches. Replace with a `dnf5 install` once an RPM ships.
 - **`disk_config/`** — TOML configs for disk image generation (ISO, QCOW2, RAW). Edit `iso-gnome.toml` kickstart to point at your image for ISO installs.
 - **`Justfile`** — Task runner for local builds, VM creation, and development utilities.
 - **`.github/workflows/`** — CI: `build.yml` (container build + sign + push to GHCR), `build-disk.yml` (disk images via bootc-image-builder).
