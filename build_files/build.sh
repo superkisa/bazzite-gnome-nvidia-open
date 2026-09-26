@@ -31,11 +31,12 @@ install_netbird() {
 install_fedora_packages() {
 	dnf5 install -y chezmoi fish git keepassxc kitty socat syncthing xpra
 	dnf5 install -y podman podman-docker docker-compose
-	# Claude Desktop's Cowork VM (edk2-ovmf is already in the base image)
+	# Claude Desktop's Cowork VM (pulls in edk2-ovmf, whose OVMF_CODE.fd it uses)
 	dnf5 install -y qemu-system-x86-core virtiofsd
 
 	dnf5 copr enable -y jdxcode/mise
 	dnf5 install -y mise
+	dnf5 copr disable -y jdxcode/mise
 
 	install_yum_repo vscode
 	dnf5 install -y code
@@ -47,8 +48,7 @@ install_fedora_packages() {
 	install_netbird
 }
 
-# Unpacks Anthropic's signed .deb (there is no RPM yet). Must run after every
-# dnf5 install, since it rebuilds the icon and MIME caches.
+# Unpacks Anthropic's signed .deb (there is no RPM yet).
 install_claude_desktop() {
 	bash /ctx/install-claude-desktop.sh
 }
@@ -85,6 +85,29 @@ configure_signatures() {
 	install -m 644 /ctx/fs/etc/pki/containers/superkisa.pub /etc/pki/containers/superkisa.pub
 }
 
+# GNOME reads icon-theme.cache and mimeinfo.cache, not the directories. RPM
+# file triggers regenerate both on every dnf5 install, but files copied in
+# outside dnf (Claude Desktop) only reach them through this rebuild. On an
+# ostree image every mtime is epoch 0, so GTK can't tell a cache is stale and
+# trusts it. Run this after the last file is copied in, then check that the
+# manually installed entries landed.
+rebuild_desktop_caches() {
+	gtk-update-icon-cache --force --quiet /usr/share/icons/hicolor
+	update-desktop-database /usr/share/applications
+
+	# The cache is binary and `strings` can glue a preceding byte onto the
+	# name, so anchor only the end of the line.
+	grep -qE 'claude-desktop$' < <(strings /usr/share/icons/hicolor/icon-theme.cache) || {
+		echo "claude-desktop is missing from the hicolor icon cache" >&2
+		exit 1
+	}
+	grep -q '^x-scheme-handler/claude=.*com\.anthropic\.Claude\.desktop' \
+		/usr/share/applications/mimeinfo.cache || {
+		echo "claude:// has no handler in mimeinfo.cache" >&2
+		exit 1
+	}
+}
+
 ###  Main
 
 install_fedora_packages
@@ -92,3 +115,4 @@ install_claude_desktop
 configure_hibernation
 enable_services
 configure_signatures
+rebuild_desktop_caches
