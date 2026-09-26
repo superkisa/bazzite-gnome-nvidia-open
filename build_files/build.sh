@@ -11,6 +11,14 @@ function install_yum_repo() {
 		"/etc/yum.repos.d/${repo_name}.repo"
 }
 
+install_chatgpt() {
+	install -D -m 644 \
+		/ctx/fs/etc/pki/rpm-gpg/RPM-GPG-KEY-chatgpt-3BFA0E4AE8B8CC16A2D9BA684A3B4A566C4660E4.asc \
+		/etc/pki/rpm-gpg/RPM-GPG-KEY-chatgpt-3BFA0E4AE8B8CC16A2D9BA684A3B4A566C4660E4.asc
+	install_yum_repo chatgpt
+	dnf5 install -y chatgpt
+}
+
 ###  Install packages
 
 # Packages can be installed from any enabled yum repo on the image.
@@ -42,6 +50,7 @@ install_fedora_packages() {
 	dnf5 install -y --nogpgcheck terra-release terra-gpg-keys
 	dnf5 install -y zed ghostty
 
+	install_chatgpt
 	install_netbird
 }
 
