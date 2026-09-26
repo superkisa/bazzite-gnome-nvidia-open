@@ -29,7 +29,7 @@ install_netbird() {
 }
 
 install_fedora_packages() {
-	dnf5 install -y chezmoi fish git keepassxc kitty syncthing xpra
+	dnf5 install -y chezmoi fish git keepassxc kitty socat syncthing xpra
 	dnf5 install -y podman podman-docker docker-compose
 
 	dnf5 copr enable -y jdxcode/mise
