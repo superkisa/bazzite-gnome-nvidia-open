@@ -51,9 +51,6 @@ install_fedora_packages() {
 # dnf5 install, since it rebuilds the icon and MIME caches.
 install_claude_desktop() {
 	bash /ctx/install-claude-desktop.sh
-	# Cowork needs /dev/vhost-vsock
-	install -D -m 644 /ctx/fs/usr/lib/modules-load.d/claude-desktop-cowork.conf \
-		/usr/lib/modules-load.d/claude-desktop-cowork.conf
 }
 
 enable_services() {
