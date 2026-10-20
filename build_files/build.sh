@@ -77,6 +77,21 @@ configure_hibernation() {
 		/usr/libexec/configure-hibernate-swap
 }
 
+configure_moonshine_tools() {
+	# Lifecycle tools install the runtime per user, independently of OS updates.
+	# The scripts are copied into the build context by the Containerfile.
+	install -D -m 644 /ctx/moonshine/recipes.just /usr/share/moonshine-server/recipes.just
+	install -m 644 /ctx/moonshine/README.md /usr/share/moonshine-server/README.md
+	for script in common install uninstall prepare-steam; do
+		install -m 755 "/ctx/moonshine/${script}.sh" "/usr/share/moonshine-server/${script}.sh"
+	done
+	mkdir -p /usr/share/ublue-os/just
+	local custom=/usr/share/ublue-os/just/60-custom.just
+	if ! grep -qF 'import "/usr/share/moonshine-server/recipes.just"' "$custom" 2>/dev/null; then
+		printf '\nimport "/usr/share/moonshine-server/recipes.just"\n' >>"$custom"
+	fi
+}
+
 # Configure container signature verification
 configure_signatures() {
 	jq '.transports.docker["ghcr.io/superkisa"] = [
@@ -122,6 +137,7 @@ rebuild_desktop_caches() {
 install_fedora_packages
 install_claude_desktop
 configure_hibernation
+configure_moonshine_tools
 enable_services
 configure_signatures
 rebuild_desktop_caches
