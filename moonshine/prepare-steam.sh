@@ -3,7 +3,7 @@
 set -ouex pipefail
 
 if pgrep -u "$UID" -x steam >/dev/null; then
-	/usr/bin/steam -shutdown
+	/usr/bin/steam -shutdown || true
 	for ((attempt = 0; attempt < 30; attempt++)); do
 		if ! pgrep -u "$UID" -x steam >/dev/null; then
 			exit 0

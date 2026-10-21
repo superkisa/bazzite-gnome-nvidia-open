@@ -20,14 +20,28 @@ config="$config_home/moonshine/config.toml"
 service="$config_home/systemd/user/$server_service"
 
 unit_exists() {
-	[[ $(systemctl --user show "$1" --property=LoadState --value) != not-found ]]
+	local load active
+	load=$(systemctl --user show "$1" --property=LoadState --value)
+	active=$(systemctl --user show "$1" --property=ActiveState --value)
+	[[ $load != not-found || ($active != inactive && $active != failed && -n $active) ]]
+}
+
+check_environment() {
+	local common_dir
+	common_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+	python3 "$common_dir/install.py" check-environment "$config_home" "$data_home"
 }
 
 stop_servers() {
 	local unit
 	for unit in "$server_service" "$legacy_service"; do
 		if unit_exists "$unit"; then
-			systemctl --user disable --now "$unit"
+			systemctl --user stop "$unit"
+			# A running unit can outlive its deleted unit file. Stop it even then,
+			# but don't ask systemctl to disable a file which no longer exists.
+			if [[ $(systemctl --user show "$unit" --property=LoadState --value) != not-found ]]; then
+				systemctl --user disable "$unit"
+			fi
 		fi
 	done
 	if unit_exists moonshine-session.service; then

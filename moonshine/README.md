@@ -33,9 +33,23 @@ ujust moonshine-purge
 configuration and pairings, and enables/starts `moonshine-server.service`.
 It verifies the official release RPM's SHA-256 against the pinned GitHub asset
 digest and extracts its executable, WSI library and license. It does not install
-an RPM or run its scriptlets. The runtime is under the user's data directory,
-so OS updates preserve it. To update the runtime version, review the new release
+an RPM or run its scriptlets. Runtime files live under the user's data directory,
+so OS updates preserve them. The image explicitly installs the RPM's runtime
+dependencies, Vulkan loader, virtual-input module defaults, and upstream udev
+rules. Preserving files does not guarantee compatibility with future library or
+driver changes; the installer checks the candidate runtime before switching.
+To update the runtime version, review the new release
 and update the version and digest in `install.sh`.
+
+The candidate config and runtime are validated before stopping the old server.
+The first health check uses ephemeral ports so it can run alongside an existing
+server. After stopping the old server, the installer rechecks the actual ports
+and waits for the new server to respond. Failure restores previous files and
+the server's enabled/running state. An interrupted game session cannot be restored.
+Old runtime versions are pruned only after successful activation.
+If an active server's unit file was manually deleted, restore that file or run
+uninstall first; the installer refuses to stop a server it could not restart
+during rollback. Uninstall still stops such orphaned units.
 
 `moonshine-uninstall` stops/disables the server and removes its unit, runtime,
 Vulkan layer manifest and Steam preparation helper. It preserves configuration,
@@ -45,11 +59,15 @@ certificates and pairing state, including `~/.local/share/moonshine/state.toml`.
 `~/.local/share/moonshine` directories. Reinstallation then requires fresh pairing.
 The management recipes remain in the repository/image so you can reinstall.
 Neither removal command changes the host's firewall or other Vulkan layers.
+Custom certificate/key locations outside the managed Moonshine directories are
+preserved; remove those separately if desired.
 
 The installer migrates the previous `tablet.toml` to `config.toml`, preserves
 user-added application scanners, and removes the previous
 `moonshine-tablet.service`. If `config.toml` already exists during that migration,
 it is saved as `config.toml.before-migration` before the active config is moved.
+Existing application titles are preserved because Moonshine derives app IDs
+from them; changing a title can invalidate client shortcuts.
 
 ## Files and configuration
 
@@ -63,8 +81,13 @@ it is saved as `config.toml.before-migration` before the active config is moved.
 | `~/.local/share/vulkan/implicit_layer.d/VkLayer_moonshine_wsi.json` | Registers Moonshine's Vulkan WSI layer |
 | `~/.config/systemd/user/moonshine-server.service` | User service, started with the graphical login session |
 
-The paths follow `XDG_CONFIG_HOME` / `XDG_DATA_HOME` overrides when set. Existing
-unused TOML backups are not loaded or merged into `config.toml`.
+The paths follow `XDG_CONFIG_HOME` / `XDG_DATA_HOME` overrides when set. Install
+and removal require those paths to match the systemd user manager's graphical
+session environment, because it also launches the streamed games. Divergent
+shell-only overrides are rejected before changing files or services. New configs
+explicitly set certificate/key paths under `${XDG_CONFIG_HOME}/moonshine`, and
+the unit pins both XDG variables. Existing explicit certificate paths are kept.
+Unused TOML backups are not loaded or merged into `config.toml`.
 
 The server name defaults to the hostname (`TowerBazzite` here). `hdr = true`
 allows HDR when requested by a capable client; SDR clients still receive SDR.
@@ -110,9 +133,11 @@ and activates its WSI layer for HDR sessions. Existing launch options that force
 another display or disable HDR can interfere. Use **Quit Session** in Moonlight
 when finished. Actual frame rate depends on the game, encoder, network and client.
 
-The service requires a desktop login. Bazzite's existing udev rules grant the
-active desktop user virtual-controller access. Headless login/group setup is
-not configured by these recipes.
+The service requires a desktop login. The image ships the upstream Moonshine
+udev rules for virtual gamepads, including gyro/touchpad evdev and uhid hidraw
+nodes that Bazzite's generic joystick rules do not cover. These additions take
+effect when booting the rebuilt image. Headless login/group setup is not
+configured by these recipes.
 
 ## Diagnostics and config changes
 
@@ -145,3 +170,14 @@ sudo firewall-cmd --permanent --zone=FedoraWorkstation --add-port=47984/tcp --ad
 
 No router forwarding is required for LAN streaming. The pairing page uses
 47989; Sunshine's management port 47990 is not used here.
+
+## Regression checks
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s moonshine/tests -v
+just lint
+just check
+```
+
+The lifecycle tests use isolated directories and simulated systemd/GPU checks;
+they do not stop the host's running Moonshine service.

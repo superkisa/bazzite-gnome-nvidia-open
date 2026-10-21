@@ -12,6 +12,7 @@ if [[ $# -gt 1 || ($# -eq 1 && $1 != --purge) ]]; then
 fi
 
 systemctl --user show-environment >/dev/null
+check_environment
 stop_servers
 rm -f -- "$service" "$config_home/systemd/user/$legacy_service" \
 	"$data_home/vulkan/implicit_layer.d/VkLayer_moonshine_wsi.json" \
@@ -21,7 +22,7 @@ if [[ ${1:-} == --purge ]]; then
 	rm -rf -- "$config_home/moonshine" "$data_home/moonshine"
 	rm -rf -- "$config_home/systemd/user/$server_service.d" \
 		"$config_home/systemd/user/$legacy_service.d"
-	echo 'Moonshine removed, including configuration, certificates and pairings.'
+	echo 'Moonshine runtime and managed configuration/state removed.'
 else
 	echo 'Moonshine removed. Configuration, certificates and pairings preserved.'
 fi

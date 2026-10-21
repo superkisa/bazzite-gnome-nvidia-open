@@ -78,18 +78,23 @@ configure_hibernation() {
 }
 
 configure_moonshine_tools() {
+	# Runtime requirements from the pinned RPM, plus the dynamic Vulkan loader.
+	# Declare these here rather than depending on incidental base-image contents.
+	dnf5 install -y glibc opus libevdev libxkbcommon mesa-libgbm libstdc++ \
+		libgcc libwayland-client xorg-x11-server-Xwayland vulkan-loader
+	install -D -m 644 /ctx/moonshine/60-moonshine.rules /usr/lib/udev/rules.d/60-moonshine.rules
+	install -D -m 644 /ctx/moonshine/moonshine-modules.conf /usr/lib/modules-load.d/moonshine.conf
 	# Lifecycle tools install the runtime per user, independently of OS updates.
 	# The scripts are copied into the build context by the Containerfile.
 	install -D -m 644 /ctx/moonshine/recipes.just /usr/share/moonshine-server/recipes.just
 	install -m 644 /ctx/moonshine/README.md /usr/share/moonshine-server/README.md
+	install -m 644 /ctx/moonshine/UPSTREAM-LICENSE /usr/share/moonshine-server/UPSTREAM-LICENSE
+	install -m 644 /ctx/moonshine/install.py /usr/share/moonshine-server/install.py
 	for script in common install uninstall prepare-steam; do
 		install -m 755 "/ctx/moonshine/${script}.sh" "/usr/share/moonshine-server/${script}.sh"
 	done
 	mkdir -p /usr/share/ublue-os/just
-	local custom=/usr/share/ublue-os/just/60-custom.just
-	if ! grep -qF 'import "/usr/share/moonshine-server/recipes.just"' "$custom" 2>/dev/null; then
-		printf '\nimport "/usr/share/moonshine-server/recipes.just"\n' >>"$custom"
-	fi
+	printf '\nimport "/usr/share/moonshine-server/recipes.just"\n' >>/usr/share/ublue-os/just/60-custom.just
 }
 
 # Configure container signature verification
