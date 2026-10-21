@@ -10,6 +10,8 @@ alias run-vm := run-vm-qcow2
 default:
     @just --list
 
+import 'moonshine/recipes.just'
+
 # Check Just Syntax
 [group('Just')]
 check:
@@ -293,7 +295,6 @@ spawn-vm rebuild="0" type="qcow2" ram="6G":
       --vsock=false --pass-ssh-key=false \
       -i ./output/**/*.{{ type }}
 
-
 # Runs shell check on all Bash scripts
 lint:
     #!/usr/bin/env bash
@@ -304,7 +305,7 @@ lint:
         exit 1
     fi
     # Run shellcheck on all Bash scripts
-    /usr/bin/find . -iname "*.sh" -type f -exec shellcheck "{}" ';'
+    /usr/bin/find . -iname "*.sh" -type f -exec shellcheck -x "{}" +
 
 # Runs shfmt on all Bash scripts
 format:
